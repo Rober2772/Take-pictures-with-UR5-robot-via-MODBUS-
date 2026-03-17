@@ -5,7 +5,7 @@ Use the pyModbusTCP library to send a signal and receive multiple data from the 
 **1. Dirigirse a la carpeta donde quieres crear el entorno virtual mediante la terminal**
 
 **2. Crear un entorno virtual de python con permisos para acceder a las librerias del sistema:**\
-python -m venv --system-site-packages nombre-del-entorno
+python3 -m venv --system-site-packages nombre-del-entorno
 
 **3. Entrar al entorno virtual:**\
    source nombre-del-entorno/bin/activate
