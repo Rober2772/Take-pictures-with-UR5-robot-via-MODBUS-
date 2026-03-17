@@ -1,5 +1,5 @@
-# Take-pictures-with-UR5-robot-via-MODBUS-
-Use the pyModbusTCP library to send a signal and receive multiple data from the robot, calculate the angles and take pictures on the selected angles
+# Take-pictures-with-UR5-robot-via-MODBUS
+Uso de la librería pyModbusTCP para enviar y recibir multiples datos de el robot UR5, recibe los ángulos para tomar fotos en ciertos ángulos usando una cámara colocada como herramienta en la punta del brazo robótico y captura los datos en un archivo .csv
 
 # Puertos MODBUS
 **Port 128** = Variable de activación del robot\
