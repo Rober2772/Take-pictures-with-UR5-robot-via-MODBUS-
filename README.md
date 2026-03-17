@@ -1,6 +1,12 @@
 # Take-pictures-with-UR5-robot-via-MODBUS-
 Use the pyModbusTCP library to send a signal and receive multiple data from the robot, calculate the angles and take pictures on the selected angles
 
+# Puertos MODBUS
+**Port 128** = Variable de activación del robot\
+**Port 129** = Ángulo en grados desde posición inicial a posición actual\
+**Port 130** = Ángulo en grados del eje X\
+**Port 131** = Ángulo en grados del eje Y\
+
 # Instrucciones de código
 **1. Dirigirse a la carpeta donde quieres crear el entorno virtual mediante la terminal**
 
