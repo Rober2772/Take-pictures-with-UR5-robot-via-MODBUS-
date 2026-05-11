@@ -27,4 +27,5 @@ lista_angulos = "angulos en los que se capturan las fotos"
 
 **6. Correr el código dentro del entorno virtual**
 
-> [!NOTE] Los comandos son para la terminal de linux, para windows cambiaría la sintaxis
+> [!NOTE]
+> Los comandos son para la terminal de linux, para windows cambiaría la sintaxis.
