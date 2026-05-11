@@ -83,7 +83,7 @@ with open(nombre_archivo, mode='w', newline='') as file:
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret: break
-        #cv.imshow('Grabando... Presiona q para salir', frame)    
+        cv.imshow('Mostrando imagen', frame)    
                 #Control de la frecuencia de registros de datos
                 #lectura de los puertos MODBUS
         if time.time() - ultimo_tiempo_modbus >= tiempo_entre_captura:
