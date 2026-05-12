@@ -83,7 +83,8 @@ while True:
                     #Inicia in ciclo mientras la camara esta abierta y capturando
                 while cap.isOpened():
                     ret, frame = cap.read()
-                    if not ret: break
+                    if not ret: 
+                        break
                     #cv.imshow('Grabando... Presiona q para salir', frame)    
                             #Control de la frecuencia de registros de datos
                             #lectura de los puertos MODBUS
@@ -118,15 +119,24 @@ while True:
                                 print(f"Cambio detectado: Subtrayectoria {fase} ({direccion_actual})")
 
                             #Detección de la posición dependiendo en que angulos se encuentra
-                            if(movx<-1 and -1<=movy<=1): posicion=4
-                            elif(movx>1 and -1<=movy<=1): posicion=2
-                            elif(-1<=movx<=1 and movy>1): posicion=1
-                            elif(-1<=movx<=1 and movy<-1): posicion=3
-                            elif(-1<=movx<=1 and -1<=movy<=1): posicion=0
-                            elif(movx>1 and movy<-1): posicion=6
-                            elif(movx>1 and movy>1): posicion=5
-                            elif(movx<-1 and movy>1): posicion=7
-                            elif(movx<-1 and movy<-1): posicion=8
+                            if(movx<-1 and -1<=movy<=1): 
+                                posicion=4
+                            elif(movx>1 and -1<=movy<=1): 
+                                posicion=2
+                            elif(-1<=movx<=1 and movy>1): 
+                                posicion=1
+                            elif(-1<=movx<=1 and movy<-1): 
+                                posicion=3
+                            elif(-1<=movx<=1 and -1<=movy<=1): 
+                                posicion=0
+                            elif(movx>1 and movy<-1): 
+                                posicion=6
+                            elif(movx>1 and movy>1): 
+                                posicion=5
+                            elif(movx<-1 and movy>1): 
+                                posicion=7
+                            elif(movx<-1 and movy<-1): 
+                                posicion=8
                                             
                                             #Guarda el archivo de los datos y escribe el nombre con el que se guarda
                             ahora = datetime.now()
@@ -160,7 +170,8 @@ while True:
                                 print("Señal de detención recibida.")
                                 break
                     #Orden para detener la grabación con la letra q
-                    if cv.waitKey(1) == ord('q'): break
+                    if cv.waitKey(1) == ord('q'): 
+                        break
 
             #Liberación de recursos y cierre del cliente
             cap.release()
