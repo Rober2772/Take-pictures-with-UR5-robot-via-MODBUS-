@@ -32,7 +32,7 @@ ip_robot = "ip asignada del robot"\
 tiempo_entre_captura = "tiempo en el que se estan capturando datos"\
 lista_angulos = "angulos en los que se capturan las fotos"
 
-**7. Correr el código**\ 
+**7. Correr el código** \
 En la terminal "python robot.py"
 
 ---
