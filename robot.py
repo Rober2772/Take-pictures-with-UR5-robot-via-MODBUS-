@@ -9,7 +9,7 @@ from pyModbusTCP.client import ModbusClient
 
 # Ajustes iniciales, IP a la que se conecta el robot, tiempo entre captura
 # y lista de angulos en los que se estaran tomando fotos
-ip_robot = "192.168.20.142"
+ip_robot = "192.168.20.128"
 tiempo_entre_captura = 0.05
 # lista_angulos = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
 lista_angulos = list(range(0, 60))
@@ -68,13 +68,15 @@ while True:
         siguiente_id = max(ids_encontrados) + 1 if ids_encontrados else 0
         ts_actual = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-        carpeta_fotos = os.path.join(base_path, f"{siguiente_id:03d}_{ts_actual}")
+        carpeta_fotos = os.path.join(base_path, f"{siguiente_id:05d}_{ts_actual}")
         os.makedirs(carpeta_fotos, exist_ok=True)
 
         nombre_archivo = os.path.join(carpeta_fotos, f"movimientos_{ts_actual}.csv")
 
         # Variables de estado para guardar la fase en la que se encuentra
         ultimo_angulo_foto = None
+        contador_fotos_angulo = 0
+        max_capturas_por_dato = 5
         angulo_anterior = 0
         direccion_actual = "ida"
         fase = 1
@@ -123,8 +125,9 @@ while True:
                             fase += 1  # Incrementa fase: ida (1) -> regreso (2) -> ida (3)...
                             direccion_actual = nueva_direccion
                             ultimo_angulo_foto = None  # Reset para permitir fotos en misma posición pero nueva fase
+                            contador_fotos_angulo = 0
                             print(
-                                f"Cambio detectado: Subtrayectoria {fase} ({direccion_actual})"
+                                f"Cambio detectado: Subtrayectoria {fase:02d} ({direccion_actual})"
                             )
 
                         # Guarda el archivo de los datos y escribe el nombre con el que se guarda
@@ -146,19 +149,29 @@ while True:
                         clave_foto = (angulo_val, fase)
                         if angulo_val in lista_angulos:
                             if clave_foto != ultimo_angulo_foto:
+                                ultimo_angulo_foto = clave_foto
+                                contador_fotos_angulo = 1
+                                tomar_foto = True
+                            elif contador_fotos_angulo < max_capturas_por_dato:
+                                contador_fotos_angulo += 1
+                                tomar_foto = True
+                            else:
+                                tomar_foto = False
+
+                            if tomar_foto:
                                 nombre_foto = os.path.join(
                                     carpeta_fotos,
-                                    f"subtrayectoria{fase}_ang{angulo_val}_{ahora.strftime('%H-%M-%S')}.png",
+                                    f"subtrayectoria{fase:02d}_ang{angulo_val:02d}_cap{contador_fotos_angulo:02d}_{ahora.strftime('%H-%M-%S')}.png",
                                 )
                                 cv.imwrite(nombre_foto, frame)
                                 print(
-                                    f"FOTO: Subtrayectoria {fase:>2} | Ang {angulo_val:>2} |"
+                                    f"FOTO: Subtrayectoria {fase:02d} | Ang {angulo_val:02d} |"
                                 )
-                                ultimo_angulo_foto = clave_foto
 
                         # Si el ultimo angulo guardado es 0 restaura la variable para seguir capturando
                         elif angulo_val == 0:
                             ultimo_angulo_foto = None
+                            contador_fotos_angulo = 0
 
                         # Guarda el angulo anterior y la frecuencia de muestreo
                         angulo_anterior = angulo_val
