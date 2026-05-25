@@ -4,192 +4,188 @@ import time
 from datetime import datetime
 
 import cv2 as cv
-import numpy as np
 from pyModbusTCP.client import ModbusClient
 
-# Ajustes iniciales, IP a la que se conecta el robot, tiempo entre captura
-# y lista de angulos en los que se estaran tomando fotos
+# Ajustes iniciales
 ip_robot = "192.168.20.128"
 tiempo_entre_captura = 0.05
-# lista_angulos = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
+# Lista de angulos en los que se toma foto
 lista_angulos = list(range(0, 60))
 
 
-# Función para convertir valores unsigned a signed para ver numeros negativos
+# Función para convertir valores sin signo a valores con signo
 def convertir_signo(valor):
     if valor > 32767:
         return valor - 65536
     return valor
 
 
-# Ajuste del cliente, colocando la ip al cual va direccionado,
-# el port y el unit_id generalmente no cambia para MODBUS
+# Ajuste del cliente Modbus
 client = ModbusClient(
     host=ip_robot, port=502, unit_id=255, auto_open=True, auto_close=True
 )
 
-# Se abre el cliente y se actaliza el registro 128 a 1 para activar la
-# variable de encendido y activar el movimiento del robot
-# client.write_single_register(128, 1)
-# print("Registro 128 actualizado a 1")
+print("Iniciando...")
+estado_actual = "descanso"
+try:
+    while True:
+        time.sleep(4)
+        accion = (
+            input("d para descansar, i para posición de inicio y c para capturar: ")
+            .strip()
+            .lower()
+        )
 
-# Lee continuamente el valor de la entrada
-# y espera que se actualice el registro 128 para iniciar
-print("Esperando señal de inicio...")
-while True:
-    time.sleep(2)
-    accion = input("d para descansar, i para posición de inicio y c para capturar: ")
-    if accion == "d":
-        client.write_single_register(133, np.uint16(1))
-        print("Posición de descanso")
-    elif accion == "i":
-        client.write_single_register(132, np.uint16(1))
-        print("Posición de inicio")
-    elif accion == "c":
-        # Se configura la camara que se va a utilizar
-        cap = cv.VideoCapture(0)
-        client.write_single_register(128, np.uint16(1))
+        if accion == "d":
+            client.write_single_register(133, 1)
+            estado_actual = "descanso"
+            print("Posición de descanso")
 
-        # Crea una carpeta para guardar las fotos y un archivo para los datos
-        base_path = "capturas"
-        os.makedirs(base_path, exist_ok=True)
+        elif accion == "i":
+            client.write_single_register(132, 1)
+            estado_actual = "inicio"
+            print("Posición de inicio")
 
-        carpetas_existentes = [
-            d
-            for d in os.listdir(base_path)
-            if os.path.isdir(os.path.join(base_path, d))
-        ]
-        ids_encontrados = []
-        for nombre in carpetas_existentes:
-            parte_id = nombre.split("_")[0]
-            if parte_id.isdigit():
-                ids_encontrados.append(int(parte_id))
+        elif accion == "c":
+            if estado_actual == "descanso":
+                print(
+                    "Necesita estar en la posición de inicio para iniciar a capturar."
+                )
+                continue
 
-        siguiente_id = max(ids_encontrados) + 1 if ids_encontrados else 0
-        ts_actual = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            cap = cv.VideoCapture(0)
+            client.write_single_register(128, 1)
 
-        carpeta_fotos = os.path.join(base_path, f"{siguiente_id:05d}_{ts_actual}")
-        os.makedirs(carpeta_fotos, exist_ok=True)
+            # Crea carpeta base
+            base_path = "capturas"
+            os.makedirs(base_path, exist_ok=True)
 
-        nombre_archivo = os.path.join(carpeta_fotos, f"movimientos_{ts_actual}.csv")
+            # Encontrar el siguiente ID de la carpeta
+            carpetas_existentes = [
+                d
+                for d in os.listdir(base_path)
+                if os.path.isdir(os.path.join(base_path, d))
+            ]
+            ids_encontrados = [
+                int(n.split("_")[0])
+                for n in carpetas_existentes
+                if n.split("_")[0].isdigit()
+            ]
 
-        # Variables de estado para guardar la fase en la que se encuentra
-        ultimo_angulo_foto = None
-        contador_fotos_angulo = 0
-        max_capturas_por_dato = 5
-        angulo_anterior = 0
-        direccion_actual = "ida"
-        fase = 1
+            siguiente_id = max(ids_encontrados) + 1 if ids_encontrados else 0
+            ts_actual = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-        # Configura el archivo con los datos que se va a guardar,
-        # el nombre de las columnas y las especificaciones del archivo
-        with open(nombre_archivo, mode="w", newline="") as file:
-            writer = csv.writer(file, delimiter=",")
-            writer.writerow(["Fecha", "Hora", "Ángulo", "Dirección", "Subtrayectoria"])
+            carpeta_fotos = os.path.join(base_path, f"{siguiente_id:05d}_{ts_actual}")
+            os.makedirs(carpeta_fotos, exist_ok=True)
 
-            # Ajusta el tiempo de captura de datos para que no se interponga
-            # con el de captura de fotos y se inicializa la variable posicion en 0
-            ultimo_tiempo_modbus = time.time()
-            posicion = 0
+            nombre_archivo = os.path.join(carpeta_fotos, f"movimientos_{ts_actual}.csv")
 
-            # Inicia in ciclo mientras la camara esta abierta y capturando
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                # cv.imshow('Grabando... Presiona q para salir', frame)
+            ultimo_angulo_foto = None
+            contador_fotos_angulo = 0
+            max_capturas_por_dato = 5
+            angulo_anterior = 0
+            direccion_actual = "ida"
+            fase = 1
 
-                # Control de la frecuencia de registros de datos
-                # lectura de los puertos MODBUS
-                if time.time() - ultimo_tiempo_modbus >= tiempo_entre_captura:
-                    reg_angulo = client.read_holding_registers(129, 1)
-                    reg_activar = client.read_holding_registers(128, 1)
+            # El bloque with cierra el archivo automáticamente al salir
+            with open(nombre_archivo, mode="w", newline="") as file:
+                writer = csv.writer(file, delimiter=",")
+                writer.writerow(
+                    ["Fecha", "Hora", "Ángulo", "Dirección", "Subtrayectoria"]
+                )
 
-                    # Cuando detecta valores en correctos en todos los registros
-                    # convierte a enteros con signo los valores obtenidos
-                    if reg_angulo and reg_activar:
-                        angulo_val = convertir_signo(reg_angulo[0])
-                        activar = reg_activar[0]
+                ultimo_tiempo_modbus = time.time()
 
-                        # Lógica de detección de fase
-                        # Interpretación si va de ida o de regreso comparando el angulo anterior
-                        nueva_direccion = direccion_actual
-                        if angulo_val > angulo_anterior:
-                            nueva_direccion = "ida"
-                        elif angulo_val < angulo_anterior:
-                            nueva_direccion = "regreso"
+                while cap.isOpened():
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
 
-                        # Aumenta el numero de fase cada que cambia de dirección
-                        # resetea la variable ultimo_angulo_foto para tomar fotos de regreso
-                        if nueva_direccion != direccion_actual:
-                            fase += 1  # Incrementa fase: ida (1) -> regreso (2) -> ida (3)...
-                            direccion_actual = nueva_direccion
-                            ultimo_angulo_foto = None  # Reset para permitir fotos en misma posición pero nueva fase
-                            contador_fotos_angulo = 0
-                            print(
-                                f"Cambio detectado: Subtrayectoria {fase:02d} ({direccion_actual})"
+                    # Descomenta esto si quieres ver la ventana y usar 'q' para salir
+                    # cv.imshow('Mostrando imagen', frame)
+                    # if cv.waitKey(1) == ord("q"):
+                    #     break
+
+                    tiempo_actual = time.time()
+                    if tiempo_actual - ultimo_tiempo_modbus >= tiempo_entre_captura:
+                        reg_angulo = client.read_holding_registers(129, 1)
+                        reg_activar = client.read_holding_registers(128, 1)
+
+                        if reg_angulo and reg_activar:
+                            angulo_val = convertir_signo(reg_angulo[0])
+                            activar = reg_activar[0]
+
+                            # Lógica de dirección
+                            nueva_direccion = direccion_actual
+                            if angulo_val > angulo_anterior:
+                                nueva_direccion = "ida"
+                            elif angulo_val < angulo_anterior:
+                                nueva_direccion = "regreso"
+
+                            if nueva_direccion != direccion_actual:
+                                fase += 1
+                                direccion_actual = nueva_direccion
+                                ultimo_angulo_foto = None
+                                contador_fotos_angulo = 0
+                                print(
+                                    f"Cambio detectado: Subtrayectoria {fase:02d} ({direccion_actual})"
+                                )
+
+                            # Guardar en CSV
+                            ahora = datetime.now()
+                            writer.writerow(
+                                [
+                                    ahora.strftime("%Y-%m-%d"),
+                                    ahora.strftime("%H:%M:%S"),
+                                    angulo_val,
+                                    direccion_actual,
+                                    fase,
+                                ]
                             )
 
-                        # Guarda el archivo de los datos y escribe el nombre con el que se guarda
-                        ahora = datetime.now()
-                        writer.writerow(
-                            [
-                                ahora.strftime("%Y-%m-%d"),
-                                ahora.strftime("%H:%M:%S"),
-                                angulo_val,
-                                direccion_actual,
-                                fase,
-                            ]
-                        )
-                        file.flush()
-
-                        # Determina si tomar la captura con los angulos asignados,
-                        # guarda si ya tomo captura en ese angulo para solo tomar una foto y
-                        # guarda la captura con un nombre asignado en la carpeta
-                        clave_foto = (angulo_val, fase)
-                        if angulo_val in lista_angulos:
-                            if clave_foto != ultimo_angulo_foto:
-                                ultimo_angulo_foto = clave_foto
-                                contador_fotos_angulo = 1
-                                tomar_foto = True
-                            elif contador_fotos_angulo < max_capturas_por_dato:
-                                contador_fotos_angulo += 1
-                                tomar_foto = True
-                            else:
+                            # Lógica de captura
+                            clave_foto = (angulo_val, fase)
+                            if angulo_val in lista_angulos:
                                 tomar_foto = False
+                                if clave_foto != ultimo_angulo_foto:
+                                    ultimo_angulo_foto = clave_foto
+                                    contador_fotos_angulo = 1
+                                    tomar_foto = True
+                                elif contador_fotos_angulo < max_capturas_por_dato:
+                                    contador_fotos_angulo += 1
+                                    tomar_foto = True
 
-                            if tomar_foto:
-                                nombre_foto = os.path.join(
-                                    carpeta_fotos,
-                                    f"subtrayectoria{fase:02d}_ang{angulo_val:02d}_cap{contador_fotos_angulo:02d}_{ahora.strftime('%H-%M-%S')}.png",
-                                )
-                                cv.imwrite(nombre_foto, frame)
-                                print(
-                                    f"FOTO: Subtrayectoria {fase:02d} | Ang {angulo_val:02d} |"
-                                )
+                                if tomar_foto:
+                                    nombre_foto = os.path.join(
+                                        carpeta_fotos,
+                                        f"subtrayectoria{fase:02d}_ang{angulo_val:02d}_cap{contador_fotos_angulo:02d}_{ahora.strftime('%H-%M-%S')}.png",
+                                    )
+                                    cv.imwrite(nombre_foto, frame)
+                                    print(
+                                        f"FOTO: Subtrayectoria {fase:02d} | Ang {angulo_val:02d} |"
+                                    )
 
-                        # Si el ultimo angulo guardado es 0 restaura la variable para seguir capturando
-                        elif angulo_val == 0:
-                            ultimo_angulo_foto = None
-                            contador_fotos_angulo = 0
+                            elif angulo_val == 0:
+                                ultimo_angulo_foto = None
+                                contador_fotos_angulo = 0
 
-                        # Guarda el angulo anterior y la frecuencia de muestreo
-                        angulo_anterior = angulo_val
-                        ultimo_tiempo_modbus = time.time()
+                            angulo_anterior = angulo_val
+                            ultimo_tiempo_modbus = tiempo_actual
 
-                        # Si se lee un 0 en la variable activar detiene la captura
-                        # la variable activar es el mismo puerto que encendido del robot
-                        if activar == 0:
-                            print("Señal de detención recibida.")
-                            break
-                        # Orden para detener la grabación con la letra q
-                        if cv.waitKey(1) == ord("q"):
-                            break
+                            if activar == 0:
+                                print("Señal de detención recibida por Modbus.")
+                                break
 
-            # Liberación de recursos y cierre del cliente
+            # Liberación de recursos
             cap.release()
             cv.destroyAllWindows()
-            time.sleep(3)
+            print("Captura finalizada.")
+            time.sleep(1)
 
-    else:
-        print("Ingrese una letra definida")
+        else:
+            print("Ingrese una letra definida.")
+
+except KeyboardInterrupt:
+    print("\nPrograma detenido")
+finally:
+    cv.destroyAllWindows()
