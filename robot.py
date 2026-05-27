@@ -25,16 +25,19 @@ client = ModbusClient(
     host=ip_robot, port=502, unit_id=255, auto_open=True, auto_close=True
 )
 
+menu = """--------------------
+Ingresar
+ d para posición de descanso
+ i para posición de inicio
+ c para capturar
+ s para detener el programa: """
+
 print("Iniciando...")
 estado_actual = "descanso"
 try:
     while True:
         time.sleep(4)
-        accion = (
-            input("d para descansar, i para posición de inicio y c para capturar: ")
-            .strip()
-            .lower()
-        )
+        accion = input(menu).strip().lower()
 
         if accion == "d":
             client.write_single_register(133, 1)
@@ -46,6 +49,12 @@ try:
             estado_actual = "inicio"
             print("Posición de inicio")
 
+        elif accion == "s":
+            client.write_single_register(133, 1)
+            print("Programa detenido")
+            estado_actual = "descanso"
+            break
+
         elif accion == "c":
             if estado_actual == "descanso":
                 print(
@@ -54,7 +63,6 @@ try:
                 continue
 
             cap = cv.VideoCapture(0)
-            client.write_single_register(128, 1)
 
             # Crea carpeta base
             base_path = "capturas"
@@ -87,6 +95,9 @@ try:
             direccion_actual = "ida"
             fase = 1
 
+            # REORGANIZACIÓN: Variable de control para que el robot arranque una sola vez
+            robot_arrancado = False
+
             # El bloque with cierra el archivo automáticamente al salir
             with open(nombre_archivo, mode="w", newline="") as file:
                 writer = csv.writer(file, delimiter=",")
@@ -100,6 +111,11 @@ try:
                     ret, frame = cap.read()
                     if not ret:
                         break
+
+                    # REORGANIZACIÓN: El registro 128 se escribe una única vez aquí dentro
+                    if not robot_arrancado:
+                        client.write_single_register(128, 1)
+                        robot_arrancado = True
 
                     # Descomenta esto si quieres ver la ventana y usar 'q' para salir
                     # cv.imshow('Mostrando imagen', frame)
@@ -173,6 +189,7 @@ try:
                             ultimo_tiempo_modbus = tiempo_actual
 
                             if activar == 0:
+                                estado_actual = "descanso"
                                 print("Señal de detención recibida por Modbus.")
                                 break
 
