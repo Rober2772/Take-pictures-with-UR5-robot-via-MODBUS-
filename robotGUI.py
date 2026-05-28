@@ -14,7 +14,7 @@ class RobotGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Control de Robot y Captura")
-        self.root.geometry("450x450")
+        self.root.geometry("450x480")
         self.root.resizable(False, False)
         self.root.configure(bg="lightcyan2")
 
@@ -32,15 +32,29 @@ class RobotGUI:
         self.estado_actual = "descanso"
         self.capturando = False  # Bandera para controlar el hilo de captura
 
+        # Variable para almacenar el nombre del paciente
+        self.nombre_paciente_var = tk.StringVar()
+
         self.crear_interfaz()
         self.log("Iniciando aplicación. Estado actual: descanso.")
 
     def crear_interfaz(self):
+        # Marco y texto para el nombre del paciente
+        frame_paciente = tk.Frame(self.root, bg="lightcyan2")
+        frame_paciente.pack(pady=(15, 5))
+        tk.Label(frame_paciente, text="Nombre del Paciente:", bg="lightcyan2").pack(
+            side=tk.LEFT, padx=5
+        )
+        tk.Entry(frame_paciente, textvariable=self.nombre_paciente_var, width=25).pack(
+            side=tk.LEFT, padx=5
+        )
+
         # Marco para los botones
         frame_botones = tk.Frame(self.root, pady=10, padx=10, bg="lightcyan2")
         frame_botones.pack()
         frame_botones.rowconfigure(0, weight=1)
         frame_botones.columnconfigure(0, weight=1)
+
         # Botón Descanso (d)
         btn_descanso = tk.Button(
             frame_botones,
@@ -131,6 +145,13 @@ class RobotGUI:
         self.root.after(1500, self.root.destroy)
 
     def accion_capturar(self):
+        if not self.nombre_paciente_var.get().strip():
+            messagebox.showwarning(
+                "Advertencia",
+                "Por favor, ingrese el nombre del paciente antes de capturar.",
+            )
+            return
+
         if self.estado_actual == "descanso":
             messagebox.showwarning(
                 "Advertencia", "Necesita estar en la posición de inicio para capturar."
@@ -174,6 +195,31 @@ class RobotGUI:
         ts_actual = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         carpeta_fotos = os.path.join(base_path, f"{siguiente_id:05d}_{ts_actual}")
         os.makedirs(carpeta_fotos, exist_ok=True)
+
+        # NUEVO: Guardar el registro en el CSV maestro de pacientes
+        nombre_paciente = self.nombre_paciente_var.get().strip()
+        archivo_maestro_pacientes = os.path.join(base_path, "registro_pacientes.csv")
+        archivo_existe = os.path.exists(archivo_maestro_pacientes)
+
+        try:
+            with open(
+                archivo_maestro_pacientes, mode="a", newline="", encoding="utf-8"
+            ) as f_maestro:
+                writer_maestro = csv.writer(f_maestro, delimiter=",")
+                if not archivo_existe:
+                    # Escribir cabecera si el archivo se acaba de crear
+                    writer_maestro.writerow(
+                        ["ID_Carpeta", "Nombre_Paciente", "Fecha_Hora"]
+                    )
+
+                writer_maestro.writerow(
+                    [f"{siguiente_id:05d}", nombre_paciente, ts_actual]
+                )
+            self.log(
+                f"Paciente '{nombre_paciente}' registrado con ID {siguiente_id:05d}."
+            )
+        except Exception as e:
+            self.log(f"Error guardando registro maestro: {e}")
 
         nombre_archivo = os.path.join(carpeta_fotos, f"movimientos_{ts_actual}.csv")
 
