@@ -16,6 +16,7 @@ class RobotGUI:
         self.root.title("Control de Robot y Captura")
         self.root.geometry("450x450")
         self.root.resizable(False, False)
+        self.root.configure(bg="lightcyan2")
 
         # Configuración inicial
         self.ip_robot = "192.168.20.128"
@@ -36,9 +37,10 @@ class RobotGUI:
 
     def crear_interfaz(self):
         # Marco para los botones
-        frame_botones = tk.Frame(self.root, pady=10)
-        frame_botones.pack(fill=tk.X)
-
+        frame_botones = tk.Frame(self.root, pady=10, padx=10, bg="lightcyan2")
+        frame_botones.pack()
+        frame_botones.rowconfigure(0, weight=1)
+        frame_botones.columnconfigure(0, weight=1)
         # Botón Descanso (d)
         btn_descanso = tk.Button(
             frame_botones,
@@ -46,7 +48,7 @@ class RobotGUI:
             width=20,
             command=self.accion_descanso,
         )
-        btn_descanso.grid(row=0, column=0, padx=10, pady=5)
+        btn_descanso.grid(row=0, column=0, padx=5, pady=5)
 
         # Botón Inicio (i)
         btn_inicio = tk.Button(
@@ -55,7 +57,7 @@ class RobotGUI:
             width=20,
             command=self.accion_inicio,
         )
-        btn_inicio.grid(row=0, column=1, padx=10, pady=5)
+        btn_inicio.grid(row=0, column=1, padx=5, pady=5)
 
         # Botón Capturar (c)
         btn_capturar = tk.Button(
@@ -65,20 +67,22 @@ class RobotGUI:
             bg="lightblue",
             command=self.accion_capturar,
         )
-        btn_capturar.grid(row=1, column=0, padx=10, pady=5)
+        btn_capturar.grid(row=1, column=0, padx=5, pady=5)
 
         # Botón Detener (s)
         btn_detener = tk.Button(
             frame_botones,
             text="Detener Programa",
             width=20,
-            bg="salmon",
+            bg="indianred",
             command=self.accion_detener,
         )
-        btn_detener.grid(row=1, column=1, padx=10, pady=5)
+        btn_detener.grid(row=1, column=1, padx=5, pady=5)
 
         # Caja de texto para logs (reemplaza a los prints)
-        tk.Label(self.root, text="Registro de actividad:").pack(anchor=tk.W, padx=10)
+        tk.Label(self.root, text="Registro de actividad:", bg="lightcyan2").pack(
+            anchor=tk.W, padx=10
+        )
         self.caja_log = scrolledtext.ScrolledText(
             self.root, width=58, height=15, state="disabled"
         )
@@ -92,9 +96,7 @@ class RobotGUI:
         self.root.after(0, lambda: self._escribir_en_interfaz(mensaje))
 
     def _escribir_en_interfaz(self, mensaje):
-        """
-        Esta función hace el trabajo sucio, pero solo es ejecutada por el hilo principal.
-        """
+
         self.caja_log.config(state="normal")
         self.caja_log.insert(
             tk.END, f"{datetime.now().strftime('%H:%M:%S')} - {mensaje}\n"
@@ -112,12 +114,12 @@ class RobotGUI:
     def accion_descanso(self):
         self.client.write_single_register(133, 1)
         self.estado_actual = "descanso"
-        self.log("Posición de descanso (Reg 133=1).")
+        self.log("Posición de descanso.")
 
     def accion_inicio(self):
         self.client.write_single_register(132, 1)
         self.estado_actual = "inicio"
-        self.log("Posición de inicio (Reg 132=1).")
+        self.log("Posición de inicio.")
 
     def accion_detener(self):
         self.client.write_single_register(133, 1)
