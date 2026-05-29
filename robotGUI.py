@@ -14,12 +14,12 @@ class RobotGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Control de Robot y Captura")
-        self.root.geometry("450x480")
+        self.root.geometry("900x960")
         self.root.resizable(False, False)
-        self.root.configure(bg="lightcyan2")
+        self.root.configure(bg="antiquewhite1")
 
         # Configuración inicial
-        self.ip_robot = "192.168.20.128"
+        self.ip_robot = "192.168.20.142"
         self.tiempo_entre_captura = 0.05
         self.lista_angulos = list(range(0, 60))
 
@@ -40,17 +40,23 @@ class RobotGUI:
 
     def crear_interfaz(self):
         # Marco y texto para el nombre del paciente
-        frame_paciente = tk.Frame(self.root, bg="lightcyan2")
+        frame_paciente = tk.Frame(self.root, bg="antiquewhite1")
         frame_paciente.pack(pady=(15, 5))
-        tk.Label(frame_paciente, text="Nombre del Paciente:", bg="lightcyan2").pack(
-            side=tk.LEFT, padx=5
-        )
-        tk.Entry(frame_paciente, textvariable=self.nombre_paciente_var, width=25).pack(
-            side=tk.LEFT, padx=5
-        )
+        tk.Label(
+            frame_paciente,
+            text="Nombre del Paciente:",
+            bg="antiquewhite1",
+            font=("FreeSerif", 16),
+        ).pack(side=tk.LEFT, padx=5)
+        tk.Entry(
+            frame_paciente,
+            textvariable=self.nombre_paciente_var,
+            width=50,
+            font=("FreeSerif", 12),
+        ).pack(side=tk.LEFT, padx=5)
 
         # Marco para los botones
-        frame_botones = tk.Frame(self.root, pady=10, padx=10, bg="lightcyan2")
+        frame_botones = tk.Frame(self.root, pady=10, padx=10, bg="antiquewhite1")
         frame_botones.pack()
         frame_botones.rowconfigure(0, weight=1)
         frame_botones.columnconfigure(0, weight=1)
@@ -59,7 +65,9 @@ class RobotGUI:
         btn_descanso = tk.Button(
             frame_botones,
             text="Posición de Descanso",
+            font=("FreeSerif", 20),
             width=20,
+            pady=10,
             command=self.accion_descanso,
         )
         btn_descanso.grid(row=0, column=0, padx=5, pady=5)
@@ -68,7 +76,9 @@ class RobotGUI:
         btn_inicio = tk.Button(
             frame_botones,
             text="Posición de Inicio",
+            font=("FreeSerif", 20),
             width=20,
+            pady=10,
             command=self.accion_inicio,
         )
         btn_inicio.grid(row=0, column=1, padx=5, pady=5)
@@ -77,28 +87,38 @@ class RobotGUI:
         btn_capturar = tk.Button(
             frame_botones,
             text="Iniciar Captura",
+            font=("FreeSerif", 20),
             width=20,
+            pady=10,
             bg="lightblue",
             command=self.accion_capturar,
         )
-        btn_capturar.grid(row=1, column=0, padx=5, pady=5)
+        btn_capturar.grid(row=1, column=0, padx=5, pady=(5, 60))
 
         # Botón Detener (s)
         btn_detener = tk.Button(
             frame_botones,
             text="Detener Programa",
+            font=("FreeSerif", 20),
             width=20,
+            pady=10,
             bg="indianred",
             command=self.accion_detener,
         )
-        btn_detener.grid(row=1, column=1, padx=5, pady=5)
+        btn_detener.grid(row=1, column=1, padx=5, pady=(5, 60))
 
         # Caja de texto para logs (reemplaza a los prints)
-        tk.Label(self.root, text="Registro de actividad:", bg="lightcyan2").pack(
-            anchor=tk.W, padx=10
+        tk.Label(
+            self.root,
+            text="Registro de actividad:",
+            bg="antiquewhite1",
+            font=("FreeSerif", 16),
+        ).pack(
+            anchor=tk.W,
+            padx=100,
         )
         self.caja_log = scrolledtext.ScrolledText(
-            self.root, width=58, height=15, state="disabled"
+            self.root, width=58, height=35, state="disabled", font=("FreeSerif", 12)
         )
         self.caja_log.pack(padx=10, pady=5)
 
