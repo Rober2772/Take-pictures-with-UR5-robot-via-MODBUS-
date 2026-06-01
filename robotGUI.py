@@ -16,10 +16,10 @@ class RobotGUI:
         self.root.title("Control de Robot y Captura")
         self.root.geometry("900x960")
         self.root.resizable(False, False)
-        self.root.configure(bg="antiquewhite1")
+        self.root.configure(bg="floralwhite")
 
         # Configuración inicial
-        self.ip_robot = "192.168.20.142"
+        self.ip_robot = "192.168.20.128"
         self.tiempo_entre_captura = 0.05
         self.lista_angulos = list(range(0, 60))
 
@@ -40,12 +40,12 @@ class RobotGUI:
 
     def crear_interfaz(self):
         # Marco y texto para el nombre del paciente
-        frame_paciente = tk.Frame(self.root, bg="antiquewhite1")
+        frame_paciente = tk.Frame(self.root, bg="floralwhite")
         frame_paciente.pack(pady=(15, 5))
         tk.Label(
             frame_paciente,
             text="Nombre del Paciente:",
-            bg="antiquewhite1",
+            bg="floralwhite",
             font=("Garuda", 16),
         ).pack(side=tk.LEFT, padx=5)
         tk.Entry(
@@ -56,7 +56,7 @@ class RobotGUI:
         ).pack(side=tk.LEFT, padx=5)
 
         # Marco para los botones
-        frame_botones = tk.Frame(self.root, pady=10, padx=10, bg="antiquewhite1")
+        frame_botones = tk.Frame(self.root, pady=10, padx=10, bg="floralwhite")
         frame_botones.pack()
         frame_botones.rowconfigure(0, weight=1)
         frame_botones.columnconfigure(0, weight=1)
@@ -111,7 +111,7 @@ class RobotGUI:
         tk.Label(
             self.root,
             text="Registro de actividad:",
-            bg="antiquewhite1",
+            bg="floralwhite",
             font=("Garuda", 16),
         ).pack(
             anchor=tk.W,
