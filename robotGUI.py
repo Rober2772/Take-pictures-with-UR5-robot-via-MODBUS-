@@ -46,13 +46,13 @@ class RobotGUI:
             frame_paciente,
             text="Nombre del Paciente:",
             bg="antiquewhite1",
-            font=("FreeSerif", 16),
+            font=("Garuda", 16),
         ).pack(side=tk.LEFT, padx=5)
         tk.Entry(
             frame_paciente,
             textvariable=self.nombre_paciente_var,
             width=50,
-            font=("FreeSerif", 12),
+            font=("Garuda", 12),
         ).pack(side=tk.LEFT, padx=5)
 
         # Marco para los botones
@@ -65,7 +65,7 @@ class RobotGUI:
         btn_descanso = tk.Button(
             frame_botones,
             text="Posición de Descanso",
-            font=("FreeSerif", 20),
+            font=("Garuda", 20),
             width=20,
             pady=10,
             command=self.accion_descanso,
@@ -76,7 +76,7 @@ class RobotGUI:
         btn_inicio = tk.Button(
             frame_botones,
             text="Posición de Inicio",
-            font=("FreeSerif", 20),
+            font=("Garuda", 20),
             width=20,
             pady=10,
             command=self.accion_inicio,
@@ -87,38 +87,38 @@ class RobotGUI:
         btn_capturar = tk.Button(
             frame_botones,
             text="Iniciar Captura",
-            font=("FreeSerif", 20),
+            font=("Garuda", 20),
             width=20,
             pady=10,
             bg="lightblue",
             command=self.accion_capturar,
         )
-        btn_capturar.grid(row=1, column=0, padx=5, pady=(5, 60))
+        btn_capturar.grid(row=1, column=0, padx=5, pady=(5, 40))
 
         # Botón Detener (s)
         btn_detener = tk.Button(
             frame_botones,
             text="Detener Programa",
-            font=("FreeSerif", 20),
+            font=("Garuda", 20),
             width=20,
             pady=10,
             bg="indianred",
             command=self.accion_detener,
         )
-        btn_detener.grid(row=1, column=1, padx=5, pady=(5, 60))
+        btn_detener.grid(row=1, column=1, padx=5, pady=(5, 40))
 
         # Caja de texto para logs (reemplaza a los prints)
         tk.Label(
             self.root,
             text="Registro de actividad:",
             bg="antiquewhite1",
-            font=("FreeSerif", 16),
+            font=("Garuda", 16),
         ).pack(
             anchor=tk.W,
             padx=100,
         )
         self.caja_log = scrolledtext.ScrolledText(
-            self.root, width=58, height=35, state="disabled", font=("FreeSerif", 12)
+            self.root, width=58, height=35, state="disabled", font=("Garuda", 12)
         )
         self.caja_log.pack(padx=10, pady=5)
 
