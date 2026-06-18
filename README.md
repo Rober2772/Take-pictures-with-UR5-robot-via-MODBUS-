@@ -38,6 +38,7 @@ En la terminal "python robot.py"
 ---
 > [!NOTE]
 > Los comandos son para la terminal de linux, para windows cambiaría la sintaxis.
+> Instalar la libreria de Tkinter si es necesario
 
 # Para Windows
 
@@ -46,6 +47,14 @@ Ir a la pagina oficial e instalar la ultima versión de python.
 
 **2. Instalar las librerias en la consola de windows**\
 python -m pip install pyModbusTCP
+
 python -m pip install opencv-python
+
+**3. Correr el código**\
+Descargar el archivo del Github y correr el código en tu editor de código de preferencia o en la terminal.
+
+
+
+
 
 
