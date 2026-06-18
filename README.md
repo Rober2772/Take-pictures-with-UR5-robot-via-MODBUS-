@@ -35,12 +35,12 @@ lista_angulos = "angulos en los que se capturan las fotos"
 **7. Correr el código** \
 En la terminal "python robot.py"
 
----
 > [!NOTE]
 > Los comandos son para la terminal de linux, para windows cambiaría la sintaxis.
 > 
 > Instalar la libreria de Tkinter si es necesario
 
+---
 # Para Windows
 
 **1. Instalar Python**\
