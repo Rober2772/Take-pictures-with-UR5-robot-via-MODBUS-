@@ -58,7 +58,7 @@ Descargar el archivo del Github y correr el código en tu editor de código de p
 > Antes de correr el código cambia la ip a la de tu robot.
 
 > [!NOTE]
-> Si la ruta de tu archivo es algo asi C:\Users\Usuario\Downloads\robotGUI.py la carpeta "capturas" se guardara en Usuario. 
+> Si la ruta de tu archivo es algo asi C:\Users\Usuario\Downloads\robotGUI.py, la carpeta "capturas" se guardara en Usuario. 
 > 
 > Como recomendación crea una carpeta para el código dentro de Documentos para que la carpeta "capturas" se cree en Documentos o crea un arbol de carpetas.
 
