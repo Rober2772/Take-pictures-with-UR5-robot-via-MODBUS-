@@ -61,6 +61,8 @@ Descargar el archivo del Github y correr el código en tu editor de código de p
 > Si la ruta de tu archivo es algo asi C:\Users\Usuario\Downloads\robotGUI.py, la carpeta "capturas" se guardara en Usuario. 
 > 
 > Como recomendación crea una carpeta para el código dentro de Documentos para que la carpeta "capturas" se cree en Documentos o crea un arbol de carpetas.
+>
+> Cambiar las imagenes para ordenarse por fecha de forma ascendente para que esten organizadas de forma fluida.
 
 
 
