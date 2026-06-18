@@ -38,6 +38,7 @@ En la terminal "python robot.py"
 ---
 > [!NOTE]
 > Los comandos son para la terminal de linux, para windows cambiaría la sintaxis.
+
 > Instalar la libreria de Tkinter si es necesario
 
 # Para Windows
