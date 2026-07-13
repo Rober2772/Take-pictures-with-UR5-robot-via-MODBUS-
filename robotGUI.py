@@ -7,6 +7,7 @@ from datetime import datetime
 from tkinter import messagebox, scrolledtext
 
 import cv2 as cv
+from PIL import Image, ImageTk
 from pyModbusTCP.client import ModbusClient
 
 
@@ -14,12 +15,12 @@ class RobotGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Control de Robot y Captura")
-        self.root.geometry("900x960")
+        self.root.geometry("1100x960")
         self.root.resizable(False, False)
         self.root.configure(bg="floralwhite")
 
         # Configuración inicial
-        self.ip_robot = "192.168.20.128"
+        self.ip_robot = "192.168.20.142"
         self.tiempo_entre_captura = 0.05
         self.lista_angulos = list(range(0, 60))
 
@@ -30,7 +31,17 @@ class RobotGUI:
 
         # Variables de estado
         self.estado_actual = "descanso"
-        self.capturando = False  # Bandera para controlar el hilo de captura
+        self.capturando = False
+
+        # Variables para el control de la vista previa y cámara compartida
+        self.preview_activo = False
+        self.ventana_preview = None
+        self.camara = None
+        self.frame_actual = None
+        self.lock_frame = threading.Lock()  # Para asegurar acceso correcto entre hilos
+        self.hilo_camara_activo = (
+            False  # NUEVO: Controla el hilo independiente de la cámara
+        )
 
         # Variable para almacenar el nombre del paciente
         self.nombre_paciente_var = tk.StringVar()
@@ -60,6 +71,8 @@ class RobotGUI:
         frame_botones.pack()
         frame_botones.rowconfigure(0, weight=1)
         frame_botones.columnconfigure(0, weight=1)
+        frame_botones.columnconfigure(1, weight=1)
+        frame_botones.columnconfigure(2, weight=1)
 
         # Botón Descanso (d)
         btn_descanso = tk.Button(
@@ -83,6 +96,18 @@ class RobotGUI:
         )
         btn_inicio.grid(row=0, column=1, padx=5, pady=5)
 
+        # Botón Vista Previa
+        self.btn_preview = tk.Button(
+            frame_botones,
+            text="Abrir Vista Previa",
+            font=("Garuda", 20),
+            width=20,
+            pady=10,
+            bg="lightgreen",
+            command=self.toggle_preview,
+        )
+        self.btn_preview.grid(row=0, column=2, padx=5, pady=5)
+
         # Botón Capturar (c)
         btn_capturar = tk.Button(
             frame_botones,
@@ -98,7 +123,7 @@ class RobotGUI:
         # Botón Detener (s)
         btn_detener = tk.Button(
             frame_botones,
-            text="Detener Programa",
+            text="Detener Robot",
             font=("Garuda", 20),
             width=20,
             pady=10,
@@ -107,7 +132,7 @@ class RobotGUI:
         )
         btn_detener.grid(row=1, column=1, padx=5, pady=(5, 40))
 
-        # Caja de texto para logs (reemplaza a los prints)
+        # Caja de texto para logs
         tk.Label(
             self.root,
             text="Registro de actividad:",
@@ -123,14 +148,9 @@ class RobotGUI:
         self.caja_log.pack(padx=10, pady=5)
 
     def log(self, mensaje):
-        """
-        Recibe el mensaje desde cualquier hilo, pero le pide al hilo principal (root)
-        que sea él quien actualice la interfaz de forma segura.
-        """
         self.root.after(0, lambda: self._escribir_en_interfaz(mensaje))
 
     def _escribir_en_interfaz(self, mensaje):
-
         self.caja_log.config(state="normal")
         self.caja_log.insert(
             tk.END, f"{datetime.now().strftime('%H:%M:%S')} - {mensaje}\n"
@@ -142,6 +162,106 @@ class RobotGUI:
         if valor > 32767:
             return valor - 65536
         return valor
+
+    # --- NUEVO: HILO DEDICADO A LEER LA CÁMARA CONSTANTEMENTE ---
+
+    def asegurar_camara_encendida(self):
+        """Inicia el hilo de lectura de cámara si no está corriendo ya."""
+        if not self.hilo_camara_activo:
+            self.hilo_camara_activo = True
+            threading.Thread(target=self.bucle_lectura_camara, daemon=True).start()
+
+    def bucle_lectura_camara(self):
+        """Este hilo mantiene la cámara abierta mientras haya vista previa O captura."""
+        self.camara = cv.VideoCapture(0)
+        self.camara.set(cv.CAP_PROP_FRAME_WIDTH, 1280)
+        self.camara.set(cv.CAP_PROP_FRAME_HEIGHT, 720)
+
+        if not self.camara.isOpened():
+            self.log("ERROR: No se pudo abrir la cámara de video.")
+            self.hilo_camara_activo = False
+            return
+
+        self.log("Cámara iniciada correctamente en segundo plano.")
+
+        # Mantener el bucle si necesitamos la cámara para algo
+        while self.preview_activo or self.capturando:
+            ret, frame = self.camara.read()
+            if ret:
+                with self.lock_frame:
+                    self.frame_actual = frame.copy()
+            else:
+                time.sleep(0.01)  # Espera breve si falla el frame
+
+        # Si llegamos aquí, ni la vista previa ni la captura la necesitan. Apagamos.
+        self.camara.release()
+        self.camara = None
+        with self.lock_frame:
+            self.frame_actual = None
+        self.hilo_camara_activo = False
+        self.log("Cámara liberada y apagada.")
+
+    # --- FUNCIONES DE VISTA PREVIA ---
+
+    def toggle_preview(self):
+        if self.preview_activo:
+            self.detener_preview()
+        else:
+            self.iniciar_preview()
+
+    def iniciar_preview(self):
+        if self.preview_activo:
+            return
+
+        self.preview_activo = True
+        self.btn_preview.config(text="Cerrar Vista Previa", bg="khaki")
+        self.log("Abriendo ventana de vista previa...")
+
+        self.ventana_preview = tk.Toplevel(self.root)
+        self.ventana_preview.title("Vista Previa (HD)")
+        self.ventana_preview.geometry("1280x720")
+        self.ventana_preview.resizable(False, False)
+        self.ventana_preview.protocol("WM_DELETE_WINDOW", self.detener_preview)
+
+        self.lbl_video = tk.Label(self.ventana_preview, bg="black")
+        self.lbl_video.pack(fill=tk.BOTH, expand=True)
+
+        # Nos aseguramos de que el hilo que lee la cámara esté corriendo
+        self.asegurar_camara_encendida()
+
+        self.actualizar_frame_preview()
+
+    def actualizar_frame_preview(self):
+        # Si la ventana se cerró, detenemos este bucle visual
+        if not self.preview_activo or not self.ventana_preview.winfo_exists():
+            return
+
+        frame = None
+        with self.lock_frame:
+            if self.frame_actual is not None:
+                frame = self.frame_actual.copy()
+
+        if frame is not None:
+            frame_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+            img = Image.fromarray(frame_rgb)
+            imgtk = ImageTk.PhotoImage(image=img)
+
+            self.lbl_video.imgtk = imgtk
+            self.lbl_video.configure(image=imgtk)
+
+        # Actualizar la interfaz a ~30 FPS
+        self.ventana_preview.after(33, self.actualizar_frame_preview)
+
+    def detener_preview(self):
+        self.preview_activo = False
+        self.btn_preview.config(text="Abrir Vista Previa", bg="lightgreen")
+
+        if self.ventana_preview and self.ventana_preview.winfo_exists():
+            self.ventana_preview.destroy()
+
+        self.log("Ventana de vista previa cerrada.")
+        # OJO: Ya no liberamos self.camara aquí. El hilo "bucle_lectura_camara"
+        # se dará cuenta y la liberará automáticamente SOLAMENTE si self.capturando es False.
 
     # --- FUNCIONES DE LOS BOTONES ---
 
@@ -157,12 +277,10 @@ class RobotGUI:
 
     def accion_detener(self):
         self.client.write_single_register(133, 1)
+        self.client.write_single_register(134, 1)
         self.estado_actual = "descanso"
-        self.capturando = False  # Detiene el hilo de captura
-        self.log("Programa detenido. Cerrando interfaz...")
-
-        # Espera 1.5 segundos para que alcances a leer el log y luego cierra la ventana
-        self.root.after(1500, self.root.destroy)
+        self.capturando = False
+        self.log("Programa de captura y robot detenidos.")
 
     def accion_capturar(self):
         if not self.nombre_paciente_var.get().strip():
@@ -182,18 +300,27 @@ class RobotGUI:
             self.log("La captura ya está en proceso.")
             return
 
-        # Iniciar el proceso en un hilo separado
+        # Iniciamos bandera de captura
         self.capturando = True
+
+        # Nos aseguramos de que el hilo de cámara esté corriendo,
+        # sin importar si la vista previa está abierta o cerrada.
+        self.asegurar_camara_encendida()
+
         hilo = threading.Thread(target=self.proceso_captura_hilo, daemon=True)
         hilo.start()
 
     def proceso_captura_hilo(self):
-        """Esta función se ejecuta en segundo plano para no congelar la GUI."""
-        self.log("Iniciando cámara y proceso de captura...")
-        cap = cv.VideoCapture(0)
+        self.log("Iniciando recolección de datos e imágenes...")
 
-        if not cap.isOpened():
-            self.log("ERROR: No se pudo abrir la cámara.")
+        # Esperar brevemente a que la cámara entregue el primer frame si recién se encendió
+        timeout = 100
+        while self.frame_actual is None and timeout > 0 and self.capturando:
+            time.sleep(0.05)
+            timeout -= 1
+
+        if self.frame_actual is None:
+            self.log("ERROR: La cámara no está enviando fotogramas.")
             self.capturando = False
             return
 
@@ -216,7 +343,6 @@ class RobotGUI:
         carpeta_fotos = os.path.join(base_path, f"{siguiente_id:05d}_{ts_actual}")
         os.makedirs(carpeta_fotos, exist_ok=True)
 
-        # NUEVO: Guardar el registro en el CSV maestro de pacientes
         nombre_paciente = self.nombre_paciente_var.get().strip()
         archivo_maestro_pacientes = os.path.join(base_path, "registro_pacientes.csv")
         archivo_existe = os.path.exists(archivo_maestro_pacientes)
@@ -227,7 +353,6 @@ class RobotGUI:
             ) as f_maestro:
                 writer_maestro = csv.writer(f_maestro, delimiter=",")
                 if not archivo_existe:
-                    # Escribir cabecera si el archivo se acaba de crear
                     writer_maestro.writerow(
                         ["ID_Carpeta", "Nombre_Paciente", "Fecha_Hora"]
                     )
@@ -261,12 +386,15 @@ class RobotGUI:
 
                 ultimo_tiempo_modbus = time.time()
 
-                # Bucle principal de captura (depende de self.capturando)
-                while cap.isOpened() and self.capturando:
-                    ret, frame = cap.read()
-                    if not ret:
-                        self.log("Error al leer frame de la cámara.")
-                        break
+                while self.capturando:
+                    # Pausa pequeña para no saturar el CPU
+                    time.sleep(0.01)
+
+                    # Obtener el último frame disponible de manera segura
+                    with self.lock_frame:
+                        if self.frame_actual is None:
+                            continue
+                        frame = self.frame_actual.copy()
 
                     if not robot_arrancado:
                         self.client.write_single_register(128, 1)
@@ -351,18 +479,19 @@ class RobotGUI:
         except Exception as e:
             self.log(f"Error en captura: {e}")
         finally:
-            cap.release()
             self.capturando = False
-            self.log("Captura finalizada y recursos liberados.")
+            self.log("Captura finalizada.")
 
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = RobotGUI(root)
 
-    # Manejar el cierre seguro de la ventana
     def on_closing():
         app.capturando = False
+        app.preview_activo = False
+        if app.ventana_preview and app.ventana_preview.winfo_exists():
+            app.ventana_preview.destroy()
         app.client.close()
         root.destroy()
 
