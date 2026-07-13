@@ -26,6 +26,7 @@ source nombre-del-entorno/bin/activate
 **5. Instalar librerias:**\
 pip install pyModbusTCP\
 pip install opencv-python
+sudo apt-get install python3-pil.imagetk
 
 **6. Modificar valores del código**\
 ip_robot = "ip asignada del robot"\
