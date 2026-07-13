@@ -25,7 +25,7 @@ source nombre-del-entorno/bin/activate
 
 **5. Instalar librerias:**\
 pip install pyModbusTCP\
-pip install opencv-python
+pip install opencv-python\
 sudo apt-get install python3-pil.imagetk
 
 **6. Modificar valores del código**\
@@ -51,6 +51,8 @@ Ir a la pagina oficial e instalar la ultima versión de python.
 python -m pip install pyModbusTCP
 
 python -m pip install opencv-python
+
+python -m pip install Pillow
 
 **3. Correr el código**\
 Descargar el archivo del Github y correr el código en tu editor de código de preferencia o en la terminal.
